@@ -9,27 +9,25 @@ function App() {
   const [password, setPassword] = useState('')
   const [user, setUser] = useState<any>(null)
   const [users, setUsers] = useState<any>(null)
+  const [name, setName] = useState<any>("")
+  const [fullname, setFullname] = useState<any>("")
 
   React.useEffect(() => {
     auth.onAuthStateChanged(user => {
       console.log("onAuthStateChanged", user);
       if(user){
           console.log("login")
-
-
+          getCollection()
       } else {
           console.log("logout")
           setUsers([])
       }
       setUser(user)
     })
-
-
-
   }, [])
 
 
-
+    // get user data in collection
     const getCollection = () => {
         db.collection("users").get().then(snapshot => {
             let dbUsers:any = [];
@@ -39,46 +37,59 @@ function App() {
                 dbUsers.push(doc.data())
                 console.log("snapshots", doc.data())
             })
-
+            console.log("snapshots", dbUsers)
             setUsers(dbUsers)
         })
     }
 
+   // create user or data in collection
+  const createUser = () => {
+      db.collection("users").add({
+          name,
+          fullname,
+      }).then(() => {
+            getCollection();
+      })
+  }
+
+  // create user in auth
   const onclickHandler = () => {
-    console.log("mtav")
     auth.createUserWithEmailAndPassword(username, password).then(cred => {
       console.log("cred", cred)
     })
   }
 
+  //logout user
   const logoutHandler = () => {
     auth.signOut().then(() => {
       // console.log("usrr sign out")
     });
   }
 
+  //login user
   const logInHandler = () => {
     console.log(username, password)
     auth.signInWithEmailAndPassword(username, password).then(() => {
-      console.log("usrr sign in")
+      console.log("user sign in")
     });
   }
 
+  console.log("users", users)
   return (
     <div className="App">
         {
-            user ? <div> user ka</div> : <div>no user</div>
+            user ? <div>{user.email}</div> : <div>no user</div>
         }
         {
             users && users.length ?
               <ul>
                 {
-                    users.map((item: any) => {
+                    users.map((item: any) => (
                         <li>
                             <span>{item.name}</span>
                             <span>{item.fullname}</span>
                        </li>
-                    })
+                    ))
                 }
             </ul> : <div> No list</div>
         }
@@ -93,6 +104,14 @@ function App() {
         <button onClick = {logInHandler}>
             log in
         </button>
+
+        <div>
+            <input value ={name} onChange = {(e) => setName(e.currentTarget.value)}/>
+            <input value = {fullname} onChange = {(e) => setFullname(e.currentTarget.value)}/>
+            <button onClick = {createUser}>
+               Create user
+            </button>
+        </div>
     </div>
   );
 }
