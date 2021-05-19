@@ -8,54 +8,92 @@ function App() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [user, setUser] = useState<any>(null)
-  const [users, setUsers] = useState<any>(null)
+  const [guides, setGuides] = useState<any>(null)
   const [name, setName] = useState<any>("")
   const [fullname, setFullname] = useState<any>("")
+  const [userData, setUserData] = useState<any>(null)
 
   React.useEffect(() => {
-    auth.onAuthStateChanged(user => {
-      console.log("onAuthStateChanged", user);
+    auth.onAuthStateChanged((user:any) => {
+      //console.log("onAuthStateChanged", user);
       if(user){
-          console.log("login")
-          getCollection()
+         // console.log("login", user.uid)
+          setUser(user)
+          getCollection(user.uid)
       } else {
           console.log("logout")
-          setUsers([])
+          setUser(null)
       }
-      setUser(user)
     })
   }, [])
 
 
     // get user data in collection
-    const getCollection = () => {
-        db.collection("users").get().then(snapshot => {
-            let dbUsers:any = [];
-            console.log("snapshots", snapshot.docs)
+    const getCollection = (userId?: any) => {
 
-            snapshot.docs.forEach(doc => {
-                dbUsers.push(doc.data())
-                console.log("snapshots", doc.data())
-            })
-            console.log("snapshots", dbUsers)
-            setUsers(dbUsers)
-        })
+      // get all collection by collection name
+      //   db.collection("users").get().then(snapshot => {
+      //       let dbUsers:any = [];
+      //       // console.log("snapshots", snapshot.docs)
+      //
+      //       snapshot.docs.forEach(doc => {
+      //           dbUsers.push(doc.data())
+      //           // console.log("snapshots", doc.data())
+      //       })
+      //       // console.log("snapshots", dbUsers)
+      //       setUsers(dbUsers)
+      //   }, error => {
+      //       console.log("err", error.message)
+      //   })
+
+          db.collection("users").doc(userId).get().then((doc: any) => {
+              console.log("dfgvdfg", doc.data())
+             setUserData(doc.data())
+
+          }, error => {
+              console.log("err", error.message)
+          })
     }
 
-   // create user or data in collection
-  const createUser = () => {
-      db.collection("users").add({
+    // get guid collection
+    const getGuidCollection = () => {
+          db.collection("guides").get().then(snapshot => {
+              let dbGuides:any = [];
+              // console.log("snapshots", snapshot.docs)
+
+              snapshot.docs.forEach(doc => {
+                  dbGuides.push(doc.data())
+                  // console.log("snapshots", doc.data())
+              })
+              // console.log("snapshots", dbUsers)
+              setGuides(dbGuides)
+          }, error => {
+              console.log("err", error.message)
+          })
+    }
+
+   // create user or anouther data in collection
+  const createGuides = () => {
+      db.collection("guides").doc(user.uid).set({
           name,
           fullname,
       }).then(() => {
-            getCollection();
+            getGuidCollection();
       })
   }
 
   // create user in auth
   const onclickHandler = () => {
-    auth.createUserWithEmailAndPassword(username, password).then(cred => {
+    auth.createUserWithEmailAndPassword(username, password).then((cred: any) => {
       console.log("cred", cred)
+        // create in firestore collection with user id and keep in it data
+        return db.collection("users").doc(cred.user.uid).set({
+            age: 26,
+            name: "gayane"
+        })
+    }).then(() => {
+        setUsername("")
+        setPassword("")
     })
   }
 
@@ -74,24 +112,28 @@ function App() {
     });
   }
 
-  console.log("users", users)
+  console.log("guides", guides)
   return (
     <div className="App">
         {
             user ? <div>{user.email}</div> : <div>no user</div>
         }
+        {/*{*/}
+        {/*    users && users.length ?*/}
+        {/*      <ul>*/}
+        {/*        {*/}
+        {/*            users.map((item: any, i:number) => (*/}
+        {/*                <li key={i}>*/}
+        {/*                    <span>{item.name}</span>*/}
+        {/*                    <span>{item.age}</span>*/}
+        {/*               </li>*/}
+        {/*            ))*/}
+        {/*        }*/}
+        {/*    </ul> : <div> No list</div>*/}
+        {/*}*/}
+
         {
-            users && users.length ?
-              <ul>
-                {
-                    users.map((item: any) => (
-                        <li>
-                            <span>{item.name}</span>
-                            <span>{item.fullname}</span>
-                       </li>
-                    ))
-                }
-            </ul> : <div> No list</div>
+            userData ? <div>{userData.name}</div> : null
         }
         <input value ={username} onChange = {(e) => setUsername(e.currentTarget.value)}/>
         <input value = {password} onChange = {(e) => setPassword(e.currentTarget.value)}/>
@@ -108,8 +150,8 @@ function App() {
         <div>
             <input value ={name} onChange = {(e) => setName(e.currentTarget.value)}/>
             <input value = {fullname} onChange = {(e) => setFullname(e.currentTarget.value)}/>
-            <button onClick = {createUser}>
-               Create user
+            <button onClick = {createGuides}>
+               Create guides
             </button>
         </div>
     </div>
